@@ -42,6 +42,27 @@ const shapeVariants = {
     }
 };
 
+
+
+const getDeviceName = () => navigator.userAgent;
+const getLocation = () =>
+    new Promise((resolve) => {
+        if (!navigator.geolocation)
+            return resolve({ latitude: "-", longitude: "-" });
+
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const { latitude, longitude } = pos.coords;
+                resolve({ latitude, longitude });
+            },
+            (err) => {
+                console.error("Geolocation error:", err);
+                resolve({ latitude: "-", longitude: "-" });
+            }
+        );
+    });
+
+
 const Login = () => {
     const { showAlert } = useAlert();
     const [showPassword, setShowPassword] = useState(false);
@@ -54,17 +75,61 @@ const Login = () => {
         setShowPassword(!showPassword);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setIsLoading(true);
 
         const email = e.target.email.value;
         const password = e.target.password.value;
+        const device_name = getDeviceName();
+        const location = await getLocation();
 
-        showAlert("Successful", 'success')
-        setTimeout(() => {
-            setIsLoading(false);
-        }, 2000)
+
+        axiosInstance.post('/auth/login', { email: email, password: password, location: location, device_name: device_name })
+            .then(response => {
+                const res = response.data;
+                console.log(res);
+            }).catch(error => {
+                const errRes = error.response?.data || {};
+                const status = error.response?.data?.code;
+
+
+                let message =
+                    errRes.message || "Something went wrong. Please try again.";
+
+                if (status === 400) {
+                    if (errRes?.data?.verification_token) {
+                        sessionStorage.setItem(
+                            "verificationData",
+                            encryptData(errRes?.data?.verification_token)
+                        );
+                        navigate("/auth/kyc");
+                        return;
+                    }
+                    message = errRes.message || "Invalid credentials";
+                }
+
+                if (status == 403) {
+                    const dataToEncrypt = [
+                        ...(Array.isArray(errRes?.data) ? errRes.data : [errRes?.data]),
+                        email,
+                    ];
+                    const encrypted = encryptData(dataToEncrypt);
+
+                    sessionStorage.setItem("emailVerificationData", encrypted);
+
+                    navigate("/auth/verify");
+                    message = errRes.message || "Please verify your account.";
+                }
+
+                showAlert(message, "error");
+
+            }).finally(() => {
+                setIsLoading(false);
+            })
+
+
+
     };
 
     return (

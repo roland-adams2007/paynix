@@ -1,9 +1,19 @@
 
 import axios from "axios";
 import { Cookies } from "react-cookie";
+import { decryptData } from '../utils/crypto';
 
 const cookies = new Cookies();
 const { VITE_API_URL } = import.meta.env;
+
+const getDeviceId = () => {
+    const existing = localStorage.getItem("device_id");
+    if (existing) return existing;
+
+    const newId = crypto.randomUUID();
+    localStorage.setItem("device_id", newId);
+    return newId;
+};
 
 
 const axiosInstance = axios.create({
@@ -13,11 +23,11 @@ const axiosInstance = axios.create({
     },
 });
 
-// Request interceptor to attach token and device ID
+
 axiosInstance.interceptors.request.use(
     (config) => {
-        const tokenData = cookies.get("tokenData");
-        const deviceId = localStorage.getItem("deviceId");
+        const tokenData = decryptData(cookies.get("tokenData"));
+        const deviceId = getDeviceId();
 
         if (tokenData) {
             config.headers.Authorization = `Bearer ${tokenData}`;
@@ -32,4 +42,4 @@ axiosInstance.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-export default axiosInstance;
+export default axiosInstance; 
