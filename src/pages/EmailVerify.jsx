@@ -185,6 +185,9 @@ const EmailVerify = () => {
                 const errRes = error.response?.data || {};
                 const status = errRes.code;
                 let message = errRes.message || 'Something went wrong. Please try again.';
+
+
+
                 if (status === 401 && errRes.data?.verification_token) {
                     sessionStorage.setItem('verificationData', encryptData(errRes.data?.verification_token))
                     message = errRes.message || 'Failed to verify email';
@@ -196,8 +199,6 @@ const EmailVerify = () => {
                     return;
                 }
                 showAlert(message, 'error');
-                navigate('/login');
-
             })
             .finally(() => {
                 setIsLoading(false);
