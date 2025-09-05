@@ -69,7 +69,7 @@ const Login = () => {
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
-    // const [cookies, setCookie] = useCookies(['userData']);
+    const [, setCookie] = useCookies(["userData", "tokenData"]);
 
     const togglePassword = () => {
         setShowPassword(!showPassword);
@@ -88,7 +88,41 @@ const Login = () => {
         axiosInstance.post('/auth/login', { email: email, password: password, location: location, device_name: device_name })
             .then(response => {
                 const res = response.data;
-                console.log(res);
+                const { user: userData, tokenData } = res.data;
+                showAlert(res.message || 'Successful', 'success')
+                if (res && res.data && res.data.token) {
+                    sessionStorage.setItem('emailVerificationData', encryptData({ token: res.data.token, email: email }));
+                    navigate('/email_verify');
+                    return;
+                }
+
+                const expiresAt = tokenData?.expires_at;
+                let secondsLeft = 86400;
+
+                if (expiresAt) {
+                    const now = new Date();
+                    const expiryDate = new Date(expiresAt.replace(" ", "T") + "Z");
+                    secondsLeft = Math.floor((expiryDate - now) / 1000);
+                    if (isNaN(secondsLeft) || secondsLeft <= 0) secondsLeft = 86400;
+                }
+
+                setCookie("userData", encryptData(userData), {
+                    path: "/",
+                    maxAge: secondsLeft,
+                });
+
+                setCookie("tokenData", encryptData(tokenData?.token), {
+                    path: "/",
+                    maxAge: secondsLeft,
+                });
+
+                if (tokenData?.device_id) {
+                    localStorage.setItem("device_id", tokenData.device_id);
+                }
+                navigate('/dashboard');
+
+
+
             }).catch(error => {
                 const errRes = error.response?.data || {};
                 const status = error.response?.data?.code;
@@ -103,7 +137,7 @@ const Login = () => {
                             "verificationData",
                             encryptData(errRes?.data?.verification_token)
                         );
-                        navigate("/auth/kyc");
+                        navigate("/onboarding");
                         return;
                     }
                     message = errRes.message || "Invalid credentials";
@@ -118,7 +152,7 @@ const Login = () => {
 
                     sessionStorage.setItem("emailVerificationData", encrypted);
 
-                    navigate("/auth/verify");
+                    navigate("/verify");
                     message = errRes.message || "Please verify your account.";
                 }
 

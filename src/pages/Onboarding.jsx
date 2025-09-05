@@ -3,6 +3,11 @@ import { User, ArrowRight, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAlert } from '../context/AlertContext';
+import axiosInstance from "../api/axiosInstance";
+import { decryptData, encryptData } from '../utils/crypto';
+import { useCookies } from "react-cookie";
+
+
 
 // Animation variants
 const cardVariants = {
@@ -41,9 +46,34 @@ const shapeVariants = {
 const Onboarding = () => {
     const [bvn, setBvn] = useState('');
     const [nin, setNin] = useState('');
+    const [token, setToken] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
     const { showAlert } = useAlert();
+    const [, setCookie] = useCookies(["userData", "tokenData"]);
+
+
+    useEffect(() => {
+        const encryptedData = sessionStorage.getItem('verificationData');
+        if (!encryptedData) {
+            showAlert('No verification data found. Redirecting to login.', 'error');
+            sessionStorage.removeItem('verificationData')
+            navigate('/login');
+            return;
+        }
+
+        const decryptedData = decryptData(encryptedData);
+        if (!decryptedData || !decryptedData.token) {
+            showAlert('Invalid verification data. Redirecting to login.', 'error');
+            sessionStorage.removeItem('verificationData')
+            navigate('/login');
+            return;
+        }
+
+        setToken(decryptedData.token);
+
+    }, []);
+
 
 
     useEffect(() => {
@@ -68,6 +98,48 @@ const Onboarding = () => {
         }
 
         setIsLoading(true);
+
+
+        axiosInstance.post('/auth/onboarding', { bvn, nin, token })
+            .then(response => {
+                const res = response.data;
+                const { user: userData, tokenData } = res.data;
+
+                const expiresAt = tokenData?.expires_at;
+                let secondsLeft = 86400;
+
+                if (expiresAt) {
+                    const now = new Date();
+                    const expiryDate = new Date(expiresAt.replace(" ", "T") + "Z");
+                    secondsLeft = Math.floor((expiryDate - now) / 1000);
+                    if (isNaN(secondsLeft) || secondsLeft <= 0) secondsLeft = 86400;
+                }
+
+                setCookie("userData", encryptData(userData), {
+                    path: "/",
+                    maxAge: secondsLeft,
+                });
+
+                setCookie("tokenData", encryptData(tokenData?.token), {
+                    path: "/",
+                    maxAge: secondsLeft,
+                });
+
+                if (tokenData?.device_id) {
+                    localStorage.setItem("device_id", tokenData.device_id);
+                }
+                showAlert(res.message || 'Successfully submitted', "success");
+                navigate('/dashboard');
+            })
+            .catch(error => {
+                const errRes = error.response?.data || {};
+                let message =
+                    errRes.message || "Something went wrong. Please try again.";
+                showAlert(message, "error");
+            })
+            .finally(() => {
+                setIsLoading(false);
+            })
 
 
     };

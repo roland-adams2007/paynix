@@ -41,15 +41,6 @@ const shapeVariants = {
     }
 };
 
-const getDeviceId = () => {
-    const existing = localStorage.getItem("device_id");
-    if (existing) return existing;
-
-    const newId = crypto.randomUUID();
-    localStorage.setItem("device_id", newId);
-    return newId;
-};
-
 
 const EmailVerify = () => {
     const [code, setCode] = useState(['', '', '', '', '', '']);
@@ -95,7 +86,7 @@ const EmailVerify = () => {
             const remaining = Math.max(0, parseInt(savedCountdown) - elapsed);
             setResendCooldown(remaining);
         }
-    }, [navigate, showAlert]);
+    }, []);
 
     // Handle resend cooldown timer
     useEffect(() => {
@@ -154,7 +145,6 @@ const EmailVerify = () => {
             .then(response => {
                 const res = response.data;
                 const { user: userData, tokenData } = res.data;
-                const secret = VITE_SECURE_LS_SECRET;
 
                 const expiresAt = tokenData?.expires_at;
                 let secondsLeft = 86400;
@@ -166,12 +156,12 @@ const EmailVerify = () => {
                     if (isNaN(secondsLeft) || secondsLeft <= 0) secondsLeft = 86400;
                 }
 
-                setCookie("userData", encryptData(userData, secret), {
+                setCookie("userData", encryptData(userData), {
                     path: "/",
                     maxAge: secondsLeft,
                 });
 
-                setCookie("tokenData", encryptData(tokenData?.token, secret), {
+                setCookie("tokenData", encryptData(tokenData?.token), {
                     path: "/",
                     maxAge: secondsLeft,
                 });
@@ -199,6 +189,9 @@ const EmailVerify = () => {
                     sessionStorage.setItem('verificationData', encryptData(errRes.data?.verification_token))
                     message = errRes.message || 'Failed to verify email';
                     showAlert(message, 'error');
+                    sessionStorage.removeItem('emailVerificationData');
+                    sessionStorage.removeItem('resendCountdown');
+                    sessionStorage.removeItem('countdownStart');
                     navigate('/onboarding');
                     return;
                 }
