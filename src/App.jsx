@@ -8,28 +8,15 @@ import Register from "./pages/Register.jsx";
 import EmailVerify from "./pages/EmailVerify.jsx";
 import Onboarding from "./pages/Onboarding.jsx";
 import NotFound from "./pages/NotFound.jsx";
-import logo from "/public/images/logo.png";
+import logo from "/src/images/logo.png";
+import Landing from "./pages/Landing.jsx";
+
+
 
 // Lazy-loaded pages
 const Dashboard = lazy(() => import("./pages/Dashboard.jsx"));
 // Example: const Transfer = lazy(() => import("./pages/Transfer.jsx"));
 
-const Landing = () => (
-  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#1e3a8a] to-[#60a5fa]">
-    <div className="text-center text-white">
-      <h1 className="text-4xl font-bold mb-4">Welcome to Paynix</h1>
-      <p className="mb-6">Your trusted digital banking platform</p>
-      <div className="space-x-4">
-        <Link to="/login" className="px-6 py-3 bg-white text-blue-600 rounded-lg font-semibold hover:bg-gray-100">
-          Login
-        </Link>
-        <Link to="/register" className="px-6 py-3 bg-emerald-500 text-white rounded-lg font-semibold hover:bg-emerald-600">
-          Register
-        </Link>
-      </div>
-    </div>
-  </div>
-);
 
 export default function App() {
   return (
