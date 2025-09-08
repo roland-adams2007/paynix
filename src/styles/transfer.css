@@ -1,0 +1,128 @@
+        
+        .gradient-primary {
+            background: linear-gradient(135deg, #1A2B4D 0%, #20C997 100%);
+        }
+
+        .gradient-green {
+            background: linear-gradient(135deg, #20C997 0%, #10b981 100%);
+        }
+
+        .gradient-blue {
+            background: linear-gradient(135deg, #3b82f6 0%, #1A2B4D 100%);
+        }
+
+        .card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .transfer-option {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .transfer-option:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.1);
+        }
+
+        .transfer-option.active {
+            border-color: #1A2B4D;
+            background-color: #f8fafc;
+        }
+
+        .sidebar-item {
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-item:hover {
+            background-color: #f1f5f9;
+            transform: translateX(4px);
+        }
+
+        .sidebar-item.active {
+            background-color: #1A2B4D;
+            color: white;
+            transform: translateX(8px);
+        }
+
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            backdrop-filter: blur(10px);
+            background-color: rgba(255, 255, 255, 0.95);
+        }
+
+        .form-input {
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus {
+            border-color: #1A2B4D;
+            box-shadow: 0 0 0 3px rgba(26, 43, 77, 0.1);
+        }
+
+        .recent-contact {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .recent-contact:hover {
+            background-color: #f8fafc;
+            transform: translateX(2px);
+        }
+
+        .bank-option {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .bank-option:hover {
+            background-color: #f8fafc;
+            border-color: #1A2B4D;
+        }
+
+        .bank-option.selected {
+            border-color: #1A2B4D;
+            background-color: #f8fafc;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-slide-up {
+            animation: slideInUp 0.6s ease-out forwards;
+        }
+
+        .step-indicator {
+            transition: all 0.3s ease;
+        }
+
+        .step-indicator.active {
+            background-color: #1A2B4D;
+            color: white;
+        }
+
+        .step-indicator.completed {
+            background-color: #20C997;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding-bottom: 100px;
+            }
+        }

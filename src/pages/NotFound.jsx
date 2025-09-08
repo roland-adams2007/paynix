@@ -121,12 +121,12 @@ const NotFound = () => {
         <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen font-inter">
             <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-[calc(100vh-4rem)]">
                 <div className="flex flex-col items-center justify-center min-h-full text-center">
-                    {/* Floating Elements */}
+                    
                     <div className="relative w-full max-w-2xl mb-8">
                         <div
                             className="error-illustration h-64 relative"
                             style={{
-                                background: `url('images/404.png') center/50% no-repeat`,
+                                background: `url('/images/404.png') center/50% no-repeat`,
                             }}
                         >
                             <motion.div

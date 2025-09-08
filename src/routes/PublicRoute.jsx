@@ -48,7 +48,7 @@ export default function PublicRoute({ children, restricted = false }) {
         const verificationData = sessionStorage.getItem("verificationData");
 
         if (children.type === EmailVerify && !emailVerificationData) {
-            return <Navigate to="/register" replace />;
+            return <Navigate to="/login" replace />;
         }
         if (children.type === Onboarding && !verificationData) {
             return <Navigate to="/login" replace />;

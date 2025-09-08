@@ -174,7 +174,6 @@ const EmailVerify = () => {
                 sessionStorage.removeItem('emailVerificationData');
                 sessionStorage.removeItem('resendCountdown');
                 sessionStorage.removeItem('countdownStart');
-
                 showAlert(
                     res.message || "Email verified successfully!",
                     "success"

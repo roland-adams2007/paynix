@@ -1,4 +1,4 @@
-// src/App.jsx
+
 import { Suspense, lazy } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import PublicRoute from "./routes/PublicRoute";
@@ -13,15 +13,13 @@ import Landing from "./pages/Landing.jsx";
 
 
 
-// Lazy-loaded pages
 const Dashboard = lazy(() => import("./pages/Dashboard.jsx"));
-// Example: const Transfer = lazy(() => import("./pages/Transfer.jsx"));
+const Transfer = lazy(() => import("./pages/Transfer.jsx"));
 
 
 export default function App() {
   return (
     <Router>
-      {/* One global Suspense for all lazy pages */}
       <Suspense
         fallback={
           <div className="fixed inset-0 flex items-center justify-center bg-white z-50">
@@ -40,7 +38,7 @@ export default function App() {
           <Route path="/onboarding" element={<PublicRoute restricted={true}><Onboarding /></PublicRoute>} />
 
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-          {/* Add other lazy routes here, e.g.: <Route path="/transfer" element={<PrivateRoute><Transfer /></PrivateRoute>} /> */}
+          <Route path="/transfer" element={<PrivateRoute><Transfer /></PrivateRoute>} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

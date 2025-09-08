@@ -1,16 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, ArrowDownRight, ArrowUpRight, PiggyBank, CreditCard, Send, Plus, Smartphone, Zap, ArrowDownLeft, ShoppingCart, Laptop, Shield, Plane, CheckCircle, MoreHorizontal, Wifi } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Eye, EyeOff, ArrowDownRight, ArrowUpRight, PiggyBank, CreditCard, Send, Plus, Smartphone, Zap, ArrowDownLeft, ShoppingCart, Laptop, Shield, Plane, MoreHorizontal, Wifi } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import '../styles/dashboard.css';
+
+
 
 import Header from '../layouts/Header';
 import Mobile from '../layouts/Mobile';
 import Sidebar from '../layouts/Sidebar';
+import { decryptData } from '../utils/crypto';
+import { Cookies } from 'react-cookie';
+import axiosInstance from '../api/axiosInstance';
+import { useAlert } from '../context/AlertContext';
 
 const Dashboard = () => {
+    const { showAlert } = useAlert();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [showBalance, setShowBalance] = useState(true);
     const [greeting, setGreeting] = useState('Good morning');
+    const [bankDetails, setBankDetails] = useState([]);
+    const [isBankFetching, setIsBankFetching] = useState(true);
+    const [userData, setUserData] = useState([]);
+    const cookies = new Cookies();
+    const fetchRef = useRef(false);
+
 
     const toggleSidebar = () => {
         setIsSidebarOpen(!isSidebarOpen);
@@ -23,6 +36,35 @@ const Dashboard = () => {
     const toggleBalance = () => {
         setShowBalance(!showBalance);
     };
+
+    useEffect(() => {
+        const userDetails = decryptData(cookies.get("userData"));
+        setUserData(userDetails);
+    }, [])
+
+    useEffect(() => {
+        if (fetchRef.current == true) return;
+        fetchRef.current = true;
+
+        setIsBankFetching(true);
+        axiosInstance.post("/account/me", { type: "me" })
+            .then(response => {
+                const res = response.data;
+                setBankDetails(res.data);
+            })
+            .catch((error) => {
+                const errRes = error.response?.data || {};
+                let message =
+                    errRes.message || "Something went wrong. Please try again.";
+                showAlert(message, "error");
+            })
+            .finally(() => {
+                setIsBankFetching(false);
+            });
+
+    }, [])
+
+
 
 
     useEffect(() => {
@@ -39,32 +81,7 @@ const Dashboard = () => {
         updateWelcomeMessage();
     }, []);
 
-    // Notification system
-    const showNotification = (message, type = 'success') => {
-        const notification = document.createElement('div');
-        const bgColor = type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-[#1A2B4D]';
-        notification.className = `fixed top-4 right-4 ${bgColor} text-white px-4 sm:px-6 py-3 sm:py-4 rounded-xl shadow-2xl z-50 transform translate-x-full transition-all duration-300 max-w-xs sm:max-w-sm`;
-        notification.innerHTML = `
-      <div class="flex items-center space-x-2 sm:space-x-3">
-        <${type === 'success' ? 'CheckCircle' : 'Info'} className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-        <span class="font-medium text-sm sm:text-base">${message}</span>
-      </div>
-    `;
-        document.body.appendChild(notification);
-        setTimeout(() => {
-            notification.style.transform = 'translateX(0)';
-        }, 100);
-        setTimeout(() => {
-            notification.style.transform = 'translateX(100%)';
-            setTimeout(() => {
-                if (document.body.contains(notification)) {
-                    document.body.removeChild(notification);
-                }
-            }, 300);
-        }, 4000);
-    };
 
-    // Data for the spending chart
     const spendingData = [
         { name: 'Food & Dining', value: 45200 },
         { name: 'Transportation', value: 32800 },
@@ -75,7 +92,6 @@ const Dashboard = () => {
 
     const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#6b7280'];
 
-    // Custom tooltip for Recharts
     const CustomTooltip = ({ active, payload }) => {
         if (active && payload && payload.length) {
             return (
@@ -95,54 +111,70 @@ const Dashboard = () => {
                 <Header />
 
                 <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-                    {/* Welcome Section */}
+
                     <div className="mb-6 sm:mb-8">
                         <div className="animate-slide-up">
-                            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">{`${greeting}, John! 👋`}</h2>
+                            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">{`${greeting}, ${userData.fname || userData.first_name || 'N/A'}! 👋`}</h2>
                             <p className="text-gray-600 text-sm sm:text-base">Here's an overview of your financial activity today.</p>
                         </div>
                     </div>
 
-                    {/* Balance Card */}
+
                     <div className="mb-6 sm:mb-8 animate-slide-up" style={{ animationDelay: '0.1s' }}>
                         <div className="balance-card rounded-2xl p-6 sm:p-8 text-white relative card-hover">
                             <div className="relative z-10">
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-4 sm:space-y-0">
-                                    <div>
-                                        <p className="text-white text-opacity-80 text-sm mb-1">Total Balance</p>
-                                        <div className="flex items-center space-x-4">
-                                            <h3 className="text-2xl sm:text-4xl font-bold" id="balance">
-                                                {showBalance ? '₦847,250.00' : '₦***,***.00'}
-                                            </h3>
-                                            <button
-                                                onClick={toggleBalance}
-                                                className="text-white text-opacity-60 hover:text-opacity-100 transition-opacity"
-                                            >
-                                                {showBalance ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
-                                            </button>
+                                {isBankFetching ? (
+                                    <div className="flex justify-center items-center h-32">
+                                        <div className="loader border-t-4 border-b-4 border-white w-12 h-12 rounded-full animate-spin"></div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-4 sm:space-y-0">
+                                            <div>
+                                                <p className="text-white text-opacity-80 text-sm mb-1">Total Balance</p>
+                                                <div className="flex items-center space-x-4">
+                                                    <h3 className="text-2xl sm:text-4xl font-bold" id="balance">
+                                                        {showBalance ? "₦" + (bankDetails?.balance || 'N/A') : '₦***'}
+                                                    </h3>
+                                                    <button
+                                                        onClick={toggleBalance}
+                                                        className="text-white text-opacity-60 hover:text-opacity-100 transition-opacity"
+                                                    >
+                                                        {showBalance ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div className="text-left sm:text-right flex justify-between sm:flex-row sm:items-center sm:space-x-6">
+                                                <div className="mb-2 sm:mb-0">
+                                                    <p className="text-white text-opacity-80 text-sm">Account Number</p>
+                                                    <p className="text-base text-sm sm:text-lg font-semibold">{bankDetails?.account_number || 'N/A'}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-white text-opacity-80 text-sm">Account Name</p>
+                                                    <p className="text-base text-sm sm:text-lg font-semibold">{bankDetails?.account_name || 'N/A'}</p>
+                                                </div>
+                                            </div>
+
                                         </div>
-                                    </div>
-                                    <div className="text-left sm:text-right">
-                                        <p className="text-white text-opacity-80 text-sm mb-1">Account Number</p>
-                                        <p className="text-base sm:text-lg font-semibold">3124567890</p>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-                                    <div className="flex space-x-6">
-                                        <div>
-                                            <p className="text-white text-opacity-80 text-xs mb-1">This Month</p>
-                                            <p className="text-[#20C997] font-semibold text-sm sm:text-base">+₦124,500</p>
+
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                                            <div className="flex space-x-6">
+                                                <div>
+                                                    <p className="text-white text-opacity-80 text-xs mb-1">This Month</p>
+                                                    <p className="text-[#20C997] font-semibold text-sm sm:text-base">+₦124,500</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-white text-opacity-80 text-xs mb-1">Last Transaction</p>
+                                                    <p className="text-white font-semibold text-sm sm:text-base">₦25,000</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center space-x-2 bg-white bg-opacity-10 rounded-full px-4 py-2 w-fit">
+                                                <ArrowUpRight className="w-4 h-4 text-[#20C997]" />
+                                                <span className="text-sm font-medium text-[#20C997]">+12.5%</span>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="text-white text-opacity-80 text-xs mb-1">Last Transaction</p>
-                                            <p className="text-white font-semibold text-sm sm:text-base">₦25,000</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center space-x-2 bg-white bg-opacity-10 rounded-full px-4 py-2 w-fit">
-                                        <ArrowUpRight className="w-4 h-4 text-[#20C997]" />
-                                        <span className="text-sm font-medium text-[#20C997]">+12.5%</span>
-                                    </div>
-                                </div>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -206,7 +238,7 @@ const Dashboard = () => {
                                 <button
                                     key={action.label}
                                     className={`quick-action-btn flex flex-col items-center p-4 sm:p-6 rounded-xl border border-gray-200 hover:border-${action.border} hover:shadow-lg group`}
-                                    onClick={() => showNotification(`${action.label} feature coming soon!`, 'info')}
+
                                 >
                                     <div
                                         className={`w-12 h-12 sm:w-14 sm:h-14 ${action.gradient} rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform`}
@@ -299,7 +331,7 @@ const Dashboard = () => {
                                     <div
                                         key={index}
                                         className="transaction-item flex items-center justify-between p-3 sm:p-4 rounded-xl border border-gray-100"
-                                        onClick={() => showNotification('Transaction details modal would open here', 'info')}
+
                                     >
                                         <div className="flex items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
                                             <div className={`w-10 h-10 sm:w-12 sm:h-12 ${txn.bg} rounded-xl flex items-center justify-center flex-shrink-0`}>
@@ -364,13 +396,13 @@ const Dashboard = () => {
                                 <div className="mt-3 sm:mt-4 grid grid-cols-2 gap-2 sm:gap-3">
                                     <button
                                         className="bg-[#1A2B4D] text-white py-2 px-3 sm:px-4 rounded-lg text-xs sm:text-sm font-medium hover:bg-opacity-90 transition-colors"
-                                        onClick={() => showNotification('Card details would be displayed here', 'info')}
+
                                     >
                                         View Details
                                     </button>
                                     <button
                                         className="bg-gray-100 text-gray-700 py-2 px-3 sm:px-4 rounded-lg text-xs sm:text-sm font-medium hover:bg-gray-200 transition-colors"
-                                        onClick={() => showNotification('Card frozen successfully', 'success')}
+
                                     >
                                         Freeze Card
                                     </button>

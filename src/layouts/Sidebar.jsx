@@ -8,7 +8,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         { name: 'Transfer Money', icon: Send, path: '/transfer' },
         { name: 'Add Money', icon: PlusCircle, path: '/add-money' },
         { name: 'Virtual Cards', icon: CreditCard, path: '/virtual-cards' },
-        { name: 'Pay Bills', icon: Receipt, path: '/pay-bills' },
+        { name: 'Payments', icon: Receipt, path: '/payments' },
         { name: 'Savings & Goals', icon: Target, path: '/savings-goals' },
         { name: 'Transaction History', icon: Clock, path: '/transactions' },
         { name: 'Statements', icon: Download, path: '/statements' },
