@@ -6,19 +6,21 @@ import { decryptData } from "../utils/crypto";
 
 export default function PrivateRoute({ children }) {
   const location = useLocation();
-  const [cookies, , removeCookie] = useCookies(["tokenData", "userData"]);
-  const isAuthenticated = !!cookies.tokenData;
+  const [cookies, , removeCookie] = useCookies(["paynix_tokenData", "paynix_userData", 'paynix_device_id']);
+  const isAuthenticated = !!cookies.paynix_tokenData;
 
-  const userData = cookies.userData
-    ? decryptData(cookies.userData)
+  const userData = cookies.paynix_userData
+    ? decryptData(cookies.paynix_userData)
     : null;
 
   const clearAuthCookies = () => {
-    removeCookie("tokenData", { path: "/" });
-    removeCookie("userData", { path: "/" });
+    removeCookie("paynix_tokenData", { path: "/" });
+    removeCookie("paynix_userData", { path: "/" });
   };
 
-  const deviceId = localStorage.getItem("device_id");
+  const deviceId = cookies.paynix_device_id ?? null;
+
+
 
   if (!deviceId) {
     clearAuthCookies();

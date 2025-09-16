@@ -6,7 +6,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAlert } from '../context/AlertContext';
 import { decryptData, encryptData } from '../utils/crypto';
 import { useCookies } from "react-cookie";
-
+import { useAuth } from '../context/UseAuth';
 // Animation variants
 const cardVariants = {
     hidden: { opacity: 0, y: 50 },
@@ -51,7 +51,9 @@ const EmailVerify = () => {
     const [token, setToken] = useState('');
     const navigate = useNavigate();
     const { showAlert } = useAlert();
-    const [, setCookie] = useCookies(["userData", "tokenData"]);
+    const [, setCookie] = useCookies(["paynix_userData", "paynix_tokenData"]);
+    const { login } = useAuth();
+
 
     // Load email, token, and countdown from sessionStorage
     useEffect(() => {
@@ -156,20 +158,24 @@ const EmailVerify = () => {
                     if (isNaN(secondsLeft) || secondsLeft <= 0) secondsLeft = 86400;
                 }
 
-                setCookie("userData", encryptData(userData), {
+
+                setCookie("paynix_userData", encryptData(userData), {
                     path: "/",
                     maxAge: secondsLeft,
                 });
 
-                setCookie("tokenData", encryptData(tokenData?.token), {
+                setCookie("paynix_tokenData", encryptData(tokenData?.token), {
                     path: "/",
                     maxAge: secondsLeft,
                 });
 
                 if (tokenData?.device_id) {
-                    localStorage.setItem("device_id", tokenData.device_id);
+                    setCookie("paynix_device_id", tokenData.device_id, {
+                        path: "/",
+                        maxAge: 15 * 24 * 60 * 60, 
+                    });
                 }
-
+                login(userData);
 
                 sessionStorage.removeItem('emailVerificationData');
                 sessionStorage.removeItem('resendCountdown');

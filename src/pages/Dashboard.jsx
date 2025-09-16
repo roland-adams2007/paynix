@@ -2,16 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Eye, EyeOff, ArrowDownRight, ArrowUpRight, PiggyBank, CreditCard, Send, Plus, Smartphone, Zap, ArrowDownLeft, ShoppingCart, Laptop, Shield, Plane, MoreHorizontal, Wifi } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import '../styles/dashboard.css';
-
-
-
 import Header from '../layouts/Header';
 import Mobile from '../layouts/Mobile';
 import Sidebar from '../layouts/Sidebar';
-import { decryptData } from '../utils/crypto';
-import { Cookies } from 'react-cookie';
 import axiosInstance from '../api/axiosInstance';
 import { useAlert } from '../context/AlertContext';
+import { useAuth } from '../context/UseAuth';
 
 const Dashboard = () => {
     const { showAlert } = useAlert();
@@ -20,9 +16,8 @@ const Dashboard = () => {
     const [greeting, setGreeting] = useState('Good morning');
     const [bankDetails, setBankDetails] = useState([]);
     const [isBankFetching, setIsBankFetching] = useState(true);
-    const [userData, setUserData] = useState([]);
-    const cookies = new Cookies();
     const fetchRef = useRef(false);
+    const { user } = useAuth();
 
 
     const toggleSidebar = () => {
@@ -37,10 +32,7 @@ const Dashboard = () => {
         setShowBalance(!showBalance);
     };
 
-    useEffect(() => {
-        const userDetails = decryptData(cookies.get("userData"));
-        setUserData(userDetails);
-    }, [])
+
 
     useEffect(() => {
         if (fetchRef.current == true) return;
@@ -114,7 +106,7 @@ const Dashboard = () => {
 
                     <div className="mb-6 sm:mb-8">
                         <div className="animate-slide-up">
-                            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">{`${greeting}, ${userData.fname || userData.first_name || 'N/A'}! 👋`}</h2>
+                            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">{`${greeting}, ${user?.first_name || 'N/A'}! 👋`}</h2>
                             <p className="text-gray-600 text-sm sm:text-base">Here's an overview of your financial activity today.</p>
                         </div>
                     </div>

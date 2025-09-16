@@ -1,4 +1,3 @@
-
 import axios from "axios";
 import { Cookies } from "react-cookie";
 import { decryptData } from '../utils/crypto';
@@ -7,14 +6,16 @@ const cookies = new Cookies();
 const { VITE_API_URL } = import.meta.env;
 
 const getDeviceId = () => {
-    const existing = localStorage.getItem("device_id");
-    if (existing) return existing;
+    let deviceId = cookies.get("paynix_device_id");
+    if (deviceId) return deviceId;
 
-    const newId = crypto.randomUUID();
-    localStorage.setItem("device_id", newId);
-    return newId;
+    deviceId = crypto.randomUUID();
+    const expires = new Date();
+    expires.setDate(expires.getDate() + 15);
+
+    cookies.set("paynix_device_id", deviceId, { path: "/", expires });
+    return deviceId;
 };
-
 
 const axiosInstance = axios.create({
     baseURL: VITE_API_URL,
@@ -23,10 +24,9 @@ const axiosInstance = axios.create({
     },
 });
 
-
 axiosInstance.interceptors.request.use(
     (config) => {
-        const tokenData = decryptData(cookies.get("tokenData"));
+        const tokenData = decryptData(cookies.get("paynix_tokenData"));
         const deviceId = getDeviceId();
 
         if (tokenData) {
@@ -42,4 +42,4 @@ axiosInstance.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-export default axiosInstance; 
+export default axiosInstance;

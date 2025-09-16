@@ -7,6 +7,8 @@ import { useCookies } from 'react-cookie';
 import { encryptData } from '../utils/crypto';
 import { useAlert } from '../context/AlertContext';
 import axiosInstance from "../api/axiosInstance";
+import { useAuth } from '../context/UseAuth';
+
 
 
 const cardVariants = {
@@ -69,7 +71,8 @@ const Login = () => {
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
-    const [, setCookie] = useCookies(["userData", "tokenData"]);
+    const [, setCookie] = useCookies(["paynix_userData", "paynix_tokenData"]);
+    const { login } = useAuth();
 
     const togglePassword = () => {
         setShowPassword(!showPassword);
@@ -106,19 +109,23 @@ const Login = () => {
                     if (isNaN(secondsLeft) || secondsLeft <= 0) secondsLeft = 86400;
                 }
 
-                setCookie("userData", encryptData(userData), {
+                setCookie("paynix_userData", encryptData(userData), {
                     path: "/",
                     maxAge: secondsLeft,
                 });
 
-                setCookie("tokenData", encryptData(tokenData?.token), {
+                setCookie("paynix_tokenData", encryptData(tokenData?.token), {
                     path: "/",
                     maxAge: secondsLeft,
                 });
 
                 if (tokenData?.device_id) {
-                    localStorage.setItem("device_id", tokenData.device_id);
+                    setCookie("paynix_device_id", tokenData.device_id, {
+                        path: "/",
+                        maxAge: 15 * 24 * 60 * 60,
+                    });
                 }
+                login(userData);
                 navigate('/dashboard');
 
 
@@ -142,20 +149,6 @@ const Login = () => {
                     }
                     message = errRes.message || "Invalid credentials";
                 }
-
-                if (status == 403) {
-                    const dataToEncrypt = [
-                        ...(Array.isArray(errRes?.data) ? errRes.data : [errRes?.data]),
-                        email,
-                    ];
-                    const encrypted = encryptData(dataToEncrypt);
-
-                    sessionStorage.setItem("emailVerificationData", encrypted);
-
-                    navigate("/verify");
-                    message = errRes.message || "Please verify your account.";
-                }
-
                 showAlert(message, "error");
 
             }).finally(() => {

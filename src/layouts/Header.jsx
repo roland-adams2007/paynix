@@ -1,17 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bell, ChevronDown, User, Settings, LogOut } from 'lucide-react';
-import { decryptData } from '../utils/crypto';
-import { Cookies } from 'react-cookie';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/UseAuth';
+
 
 const Header = () => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
-    const [userData, setUserData] = useState([]);
-    const cookies = new Cookies();
     const navigate = useNavigate();
+    const { user } = useAuth();
 
-    // Close dropdown when clicking outside
+
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -30,10 +29,7 @@ const Header = () => {
     };
 
 
-    useEffect(() => {
-        const userDetails = decryptData(cookies.get("userData"));
-        setUserData(userDetails);
-    }, [])
+
 
     return (
         <header className="sticky-header bg-white shadow-sm border-b border-gray-200">
@@ -55,7 +51,7 @@ const Header = () => {
                                     <span className="text-white text-xs sm:text-sm font-semibold">P</span>
                                 </div>
                                 <div className="hidden md:block text-left">
-                                    <p className="text-sm font-semibold text-gray-900">{userData.fname || userData.first_name || '-'} {userData.lname || userData.last_name || '-'}</p>
+                                    <p className="text-sm font-semibold text-gray-900">{user?.first_name || '-'} {user?.last_name || '-'}</p>
                                 </div>
                                 <ChevronDown className={`w-4 h-4 text-gray-600 hidden sm:block transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                             </button>

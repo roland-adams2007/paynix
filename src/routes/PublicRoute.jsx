@@ -11,16 +11,16 @@ import Onboarding from "../pages/Onboarding.jsx";
 
 export default function PublicRoute({ children, restricted = false }) {
     const location = useLocation();
-    const [cookies, , removeCookie] = useCookies(["userData", "tokenData"]);
-    const isAuthenticated = !!cookies.tokenData;
+    const [cookies, , removeCookie] = useCookies(["paynix_tokenData", "paynix_userData"]);
+    const isAuthenticated = !!cookies.paynix_tokenData;
 
-    const userData = cookies.userData
-        ? decryptData(cookies.userData)
+    const userData = cookies.paynix_userData
+        ? decryptData(cookies.paynix_userData)
         : null;
 
     const clearAuthCookies = () => {
-        removeCookie("tokenData", { path: "/" });
-        removeCookie("userData", { path: "/" });
+        removeCookie("paynix_tokenData", { path: "/" });
+        removeCookie("paynix_userData", { path: "/" });
     };
 
     if (
