@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Save, X } from 'lucide-react';
 import { useAlert } from '../../context/AlertContext';
 import { useAuth } from '../../context/UseAuth';
+import axiosInstance from '../../api/axiosInstance';
 
 function SettingProfile() {
     const { showAlert } = useAlert();
@@ -18,8 +19,8 @@ function SettingProfile() {
         password: '',
         confirmPassword: ''
     });
+    const [isEditLoader, setIsEditLoader] = useState(false);
 
-    // Populate profileData with user data when user is available
     useEffect(() => {
         if (user) {
             setProfileData(prev => ({
@@ -53,12 +54,34 @@ function SettingProfile() {
             return;
         }
         showAlert('Password updated successfully!', 'success');
-        setIsEditing(false);
+
         setProfileData(prev => ({
             ...prev,
             password: '',
             confirmPassword: ''
         }));
+        setIsEditLoader(true);
+        axiosInstance.post('/me/updatepassword', { password: profileData.password })
+            .then(response => {
+                const res = response.data;
+                if (res.code == 200) {
+                    setIsEditing(false);
+                    setProfileData(prev => ({
+                        ...prev,
+                        password: '',
+                        confirmPassword: ''
+                    }));
+                    showAlert(res.message || 'Password changed successfully', 'success');
+                }
+            })
+            .catch(error => {
+                const errRes = error.response?.data || {};
+                let message = errRes.message || 'Something went wrong. Please try again.';
+                showAlert(message, 'error');
+            })
+            .finally(() => {
+                setIsEditLoader(false);
+            })
     };
 
     const handleCancel = () => {
@@ -78,28 +101,42 @@ function SettingProfile() {
                     {!isEditing ? (
                         <button
                             onClick={handleEditToggle}
-                            className="bg-[#1A2B4D] text-white px-4 py-2 cursor-pointer rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors flex items-center"
+                            disabled={isEditLoader}
+                            className={`bg-[#1A2B4D] text-white px-4 py-2 cursor-pointer rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors flex items-center ${isEditLoader ? 'opacity-50 cursor-not-allowed' : ''
+                                }`}
                         >
+                            {isEditLoader ? (
+                                <span className="loader w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            ) : null}
                             Change Password
                         </button>
                     ) : (
                         <div className="flex space-x-2">
                             <button
                                 onClick={handleCancel}
-                                className="bg-gray-100 text-gray-700 px-4 py-2 cursor-pointer rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors flex items-center"
+                                disabled={isEditLoader}
+                                className={`bg-gray-100 text-gray-700 px-4 py-2 cursor-pointer rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors flex items-center ${isEditLoader ? 'opacity-50 cursor-not-allowed' : ''
+                                    }`}
                             >
                                 <X className="w-4 h-4 mr-1" />
                                 Cancel
                             </button>
                             <button
                                 onClick={handleSave}
-                                className="bg-[#20C997] text-white px-4 py-2 cursor-pointer rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors flex items-center"
+                                disabled={isEditLoader}
+                                className={`bg-[#20C997] text-white px-4 py-2 cursor-pointer rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors flex items-center ${isEditLoader ? 'opacity-50 cursor-not-allowed' : ''
+                                    }`}
                             >
-                                <Save className="w-4 h-4 mr-1" />
+                                {isEditLoader ? (
+                                    <span className="loader w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                ) : (
+                                    <Save className="w-4 h-4 mr-1" />
+                                )}
                                 Save Changes
                             </button>
                         </div>
                     )}
+
                 </div>
 
                 {/* Personal Information Form */}

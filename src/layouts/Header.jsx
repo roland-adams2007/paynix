@@ -51,7 +51,7 @@ const Header = () => {
                                     <span className="text-white text-xs sm:text-sm font-semibold">P</span>
                                 </div>
                                 <div className="hidden md:block text-left">
-                                    <p className="text-sm font-semibold text-gray-900">{user?.first_name || '-'} {user?.last_name || '-'}</p>
+                                    <p className="text-sm font-semibold text-gray-900">{user?.first_name || user?.fname || '-'} {user?.last_name || user?.lname || '-'}</p>
                                 </div>
                                 <ChevronDown className={`w-4 h-4 text-gray-600 hidden sm:block transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                             </button>

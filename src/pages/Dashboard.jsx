@@ -106,7 +106,7 @@ const Dashboard = () => {
 
                     <div className="mb-6 sm:mb-8">
                         <div className="animate-slide-up">
-                            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">{`${greeting}, ${user?.first_name || 'N/A'}! 👋`}</h2>
+                            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">{`${greeting}, ${user?.first_name || user?.fname || 'N/A'}! 👋`}</h2>
                             <p className="text-gray-600 text-sm sm:text-base">Here's an overview of your financial activity today.</p>
                         </div>
                     </div>

@@ -146,7 +146,7 @@ const EmailVerify = () => {
         axiosInstance.post('/auth/verifycode', { code: verificationCode, token, email })
             .then(response => {
                 const res = response.data;
-                const { user: userData, tokenData } = res.data;
+                const { userData, tokenData } = res.data;
 
                 const expiresAt = tokenData?.expires_at;
                 let secondsLeft = 86400;
@@ -172,7 +172,7 @@ const EmailVerify = () => {
                 if (tokenData?.device_id) {
                     setCookie("paynix_device_id", tokenData.device_id, {
                         path: "/",
-                        maxAge: 15 * 24 * 60 * 60, 
+                        maxAge: 15 * 24 * 60 * 60,
                     });
                 }
                 login(userData);
