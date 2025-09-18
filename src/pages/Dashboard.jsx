@@ -8,6 +8,8 @@ import Sidebar from '../layouts/Sidebar';
 import axiosInstance from '../api/axiosInstance';
 import { useAlert } from '../context/AlertContext';
 import { useAuth } from '../context/UseAuth';
+import formatMoney from '../utils/fomatMoney';
+
 
 const Dashboard = () => {
     const { showAlert } = useAlert();
@@ -126,7 +128,7 @@ const Dashboard = () => {
                                                 <p className="text-white text-opacity-80 text-sm mb-1">Total Balance</p>
                                                 <div className="flex items-center space-x-4">
                                                     <h3 className="text-2xl sm:text-4xl font-bold" id="balance">
-                                                        {showBalance ? "₦" + (bankDetails?.balance || 'N/A') : '₦***'}
+                                                        {showBalance ? (formatMoney(bankDetails?.balance) || 'N/A') : '₦***'}
                                                     </h3>
                                                     <button
                                                         onClick={toggleBalance}
