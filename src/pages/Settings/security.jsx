@@ -7,6 +7,7 @@ function SettingSecurity() {
     const { showAlert } = useAlert();
     const [isPinModalOpen, setIsPinModalOpen] = useState(false);
     const [currentPinStep, setCurrentPinStep] = useState(1);
+    const [oldPin, setOldPin] = useState(''); // New state to store the verified old PIN
     const [newPin, setNewPin] = useState('');
     const [pinInputs, setPinInputs] = useState(['', '', '', '']);
     const fetchRef = useRef(false);
@@ -42,12 +43,15 @@ function SettingSecurity() {
         setIsPinModalOpen(true);
         setCurrentPinStep(pinExist ? 1 : 2);
         setPinInputs(['', '', '', '']);
+        setOldPin('');
+        setNewPin('');
     };
 
     const closePinModal = () => {
         setIsPinModalOpen(false);
         setCurrentPinStep(pinExist ? 1 : 2);
         setPinInputs(['', '', '', '']);
+        setOldPin('');
         setNewPin('');
     };
 
@@ -65,6 +69,7 @@ function SettingSecurity() {
                 .then(response => {
                     const res = response.data;
                     if (res?.code === 200) {
+                        setOldPin(currentPin);
                         setCurrentPinStep(2);
                         setPinInputs(['', '', '', '']);
                     } else {
@@ -106,7 +111,7 @@ function SettingSecurity() {
 
         setIsSubmitting(true);
         const endpoint = '/account/transactionpin';
-        const payload = pinExist ? { oldPin: newPin, newPin: currentPin } : { newPin: currentPin };
+        const payload = pinExist ? { oldPin: oldPin, newPin: currentPin } : { newPin: currentPin };
 
         axiosInstance
             .post(endpoint, payload)
@@ -135,13 +140,13 @@ function SettingSecurity() {
         newInputs[index] = value.slice(0, 1);
         setPinInputs(newInputs);
 
-        // Move focus to next input if current is filled
+
         if (value && index < 3) {
             inputRefs.current[index + 1]?.focus();
         }
     };
 
-    // Use useEffect to trigger nextPinStep when all inputs are filled
+
     useEffect(() => {
         if (pinInputs.every(input => input !== '')) {
             nextPinStep();
