@@ -1,13 +1,13 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Send, CreditCard, Target, User, Menu } from 'lucide-react';
+import { LayoutDashboard, Send, CreditCard, PlusCircle, User, Menu } from 'lucide-react';
 
 const Mobile = ({ toggleSidebar }) => {
     const navItems = [
         { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
         { name: 'Transfer', icon: Send, path: '/transfer' },
+        { name: 'Add Money', icon: PlusCircle, path: '/add-money' },
         { name: 'Cards', icon: CreditCard, path: '/cards' },
-        { name: 'Savings', icon: Target, path: '/savings' },
         { name: 'Profile', icon: User, path: '/settings/profile' },
     ];
 

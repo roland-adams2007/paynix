@@ -8,7 +8,7 @@ import Sidebar from '../layouts/Sidebar';
 import axiosInstance from '../api/axiosInstance';
 import { useAlert } from '../context/AlertContext';
 import { useAuth } from '../context/UseAuth';
-import formatMoney from '../utils/fomatMoney';
+import formatMoney from '../utils/formatMoney';
 
 
 const Dashboard = () => {

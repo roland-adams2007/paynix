@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ShieldCheck, Smartphone, Monitor, X } from 'lucide-react';
+import { ShieldCheck, X } from 'lucide-react';
 import { useAlert } from '../../context/AlertContext';
 import axiosInstance from '../../api/axiosInstance';
+import { useNavigate } from 'react-router-dom';
 
 function SettingSecurity() {
     const { showAlert } = useAlert();
+    const navigate = useNavigate();
     const [isPinModalOpen, setIsPinModalOpen] = useState(false);
     const [currentPinStep, setCurrentPinStep] = useState(1);
-    const [oldPin, setOldPin] = useState(''); // New state to store the verified old PIN
+    const [oldPin, setOldPin] = useState('');
     const [newPin, setNewPin] = useState('');
     const [pinInputs, setPinInputs] = useState(['', '', '', '']);
     const fetchRef = useRef(false);
@@ -15,6 +17,8 @@ function SettingSecurity() {
     const [pinExist, setPinExist] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const inputRefs = useRef([]);
+
+
 
     useEffect(() => {
         if (fetchRef.current) return;
@@ -140,12 +144,10 @@ function SettingSecurity() {
         newInputs[index] = value.slice(0, 1);
         setPinInputs(newInputs);
 
-
         if (value && index < 3) {
             inputRefs.current[index + 1]?.focus();
         }
     };
-
 
     useEffect(() => {
         if (pinInputs.every(input => input !== '')) {
@@ -181,8 +183,8 @@ function SettingSecurity() {
         setPinInputs(newInputs);
     };
 
-    const handleSignOut = device => {
-        showAlert(device === 'all' ? 'Signed out of all devices' : 'Device session ended', 'success');
+    const handleSignOut = () => {
+        navigate("/logout");
     };
 
     useEffect(() => {
@@ -328,46 +330,19 @@ function SettingSecurity() {
                     )}
                 </div>
 
-                {/* Active Sessions */}
+                {/* Sign Out Section */}
                 <div className="mb-6">
                     <div className="flex items-center justify-between mb-4">
                         <div>
-                            <h4 className="text-lg font-semibold text-gray-900">Active Sessions</h4>
-                            <p className="text-sm text-gray-600">Manage your logged-in devices</p>
+                            <h4 className="text-lg font-semibold text-gray-900">Sign Out</h4>
+                            <p className="text-sm text-gray-600">End your current session</p>
                         </div>
                         <button
-                            onClick={() => handleSignOut('all')}
-                            className="text-red-600 text-sm font-medium hover:text-red-700 transition-colors"
+                            onClick={handleSignOut}
+                            className="text-red-600 text-sm font-medium hover:text-red-700 cursor-pointer transition-colors"
                         >
-                            Sign Out All Devices
+                            Sign Out
                         </button>
-                    </div>
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                            <div className="flex items-center space-x-3">
-                                <Smartphone className="w-5 h-5 text-gray-600" />
-                                <div>
-                                    <p className="text-sm font-medium text-gray-900">iPhone 14 Pro</p>
-                                    <p className="text-xs text-gray-600">Lagos, Nigeria • Current session</p>
-                                </div>
-                            </div>
-                            <span className="text-xs text-green-600 font-medium">Active</span>
-                        </div>
-                        <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                            <div className="flex items-center space-x-3">
-                                <Monitor className="w-5 h-5 text-gray-600" />
-                                <div>
-                                    <p className="text-sm font-medium text-gray-900">Chrome on Windows</p>
-                                    <p className="text-xs text-gray-600">Lagos, Nigeria • 2 hours ago</p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => handleSignOut('single')}
-                                className="text-red-600 text-xs font-medium hover:text-red-700"
-                            >
-                                Sign Out
-                            </button>
-                        </div>
                     </div>
                 </div>
             </div>

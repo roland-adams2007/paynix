@@ -21,6 +21,7 @@ const Transfer = lazy(() => import("./pages/Transfer.jsx"));
 const Settings = lazy(() => import("./pages/Settings/Index.jsx"));
 const SettingProfile = lazy(() => import("./pages/Settings/profile.jsx"));
 const SettingSecurity = lazy(() => import("./pages/Settings/security.jsx"));
+const AddMoney = lazy(() => import('./pages/AddMoney.jsx'));
 
 export default function App() {
   return (
@@ -46,6 +47,7 @@ export default function App() {
 
             <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
             <Route path="/transfer" element={<PrivateRoute><Transfer /></PrivateRoute>} />
+            <Route path="/add-money" element={<PrivateRoute><AddMoney /></PrivateRoute>} />
             <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>}>
               <Route path="profile" element={<PrivateRoute><SettingProfile /></PrivateRoute>} />
               <Route path="security" element={<PrivateRoute><SettingSecurity /></PrivateRoute>} />
