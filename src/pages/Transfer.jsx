@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     LayoutDashboard,
     Send,
@@ -25,29 +25,24 @@ import {
     Menu
 } from 'lucide-react';
 import '../styles/transfer.css';
-
-
 import Header from '../layouts/Header';
 import Mobile from '../layouts/Mobile';
 import Sidebar from '../layouts/Sidebar';
 import { decryptData } from '../utils/crypto';
 import { Cookies } from 'react-cookie';
-import axiosInstance from '../api/axiosInstance';
+import PaynixTransferForm from '../components/Transfer/PaynixTransferForm';
+import ExternalTransferForm from '../components/Transfer/ExternalTransferForm';
 import { useAlert } from '../context/AlertContext';
+import formatMoney from '../utils/formatMoney';
+import axiosInstance from '../api/axiosInstance';
+import generateRef from '../utils/generateRef';
 
 const Transfer = () => {
     const { showAlert } = useAlert();
     const [selectedTransferType, setSelectedTransferType] = useState('');
-    const [selectedBank, setSelectedBank] = useState('');
     const [currentStep, setCurrentStep] = useState(1);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [paynixAmount, setPaynixAmount] = useState('');
-    const [externalAmount, setExternalAmount] = useState('');
-    const [externalAccount, setExternalAccount] = useState('');
-    const [externalName, setExternalName] = useState('');
     const [confirmationDetails, setConfirmationDetails] = useState(null);
-
-
 
     const toggleSidebar = () => {
         setIsSidebarOpen(!isSidebarOpen);
@@ -64,107 +59,46 @@ const Transfer = () => {
         }, 300);
     };
 
-    const selectContact = (name, accountNumber) => {
-        document.getElementById('paynix-recipient').value = accountNumber;
-        showAlert(`Selected contact: ${name}`, 'success');
-    };
-
-    const selectBank = (bankName, bankCode) => {
-        setSelectedBank(bankCode);
-        showAlert(`Selected bank: ${bankName}`, 'success');
-    };
-
-    const handlePaynixAmountChange = (e) => {
-        const amount = parseFloat(e.target.value) || 0;
-        setPaynixAmount(amount);
-    };
-
-    const handleExternalAmountChange = (e) => {
-        const amount = parseFloat(e.target.value) || 0;
-        setExternalAmount(amount);
-    };
-
-    const handleExternalAccountBlur = () => {
-        if (externalAccount.length === 10 && selectedBank) {
-            setTimeout(() => {
-                const mockNames = ['ADEBAYO JOHN SMITH', 'WILLIAMS SARAH JONES', 'OKAFOR MICHAEL BROWN', 'HASSAN FATIMA ALI'];
-                const randomName = mockNames[Math.floor(Math.random() * mockNames.length)];
-                setExternalName(randomName);
-                showAlert('Account name verified', 'success');
-            }, 1000);
-        }
-    };
-
-    const proceedPaynixTransfer = () => {
-        const recipient = document.getElementById('paynix-recipient').value;
-        const description = document.getElementById('paynix-description').value;
-
-        if (!recipient || !paynixAmount) {
-            showAlert('Please fill in all required fields', 'error');
-            return;
-        }
-
-        if (paynixAmount <= 0) {
-            showAlert('Please enter a valid amount', 'error');
-            return;
-        }
-
-        if (paynixAmount > 847250) {
-            showAlert('Insufficient balance', 'error');
-            return;
-        }
-
-        setConfirmationDetails({
-            type: 'paynix',
-            recipient,
-            amount: paynixAmount,
-            description,
-            fee: 0
-        });
-        setCurrentStep(3);
-    };
-
-    const proceedExternalTransfer = () => {
-        const narration = document.getElementById('external-narration').value;
-
-        if (!externalAccount || !externalAmount || !selectedBank || !externalName) {
-            showAlert('Please fill in all required fields', 'error');
-            return;
-        }
-
-        if (externalAmount <= 0) {
-            showAlert('Please enter a valid amount', 'error');
-            return;
-        }
-
-        if (externalAmount + 25 > 847250) {
-            showAlert('Insufficient balance (including fees)', 'error');
-            return;
-        }
-
-        setConfirmationDetails({
-            type: 'external',
-            accountNumber: externalAccount,
-            amount: externalAmount,
-            accountName: externalName,
-            narration,
-            bank: selectedBank,
-            fee: 25
-        });
-        setCurrentStep(3);
-    };
-
     const closeConfirmationModal = () => {
         setConfirmationDetails(null);
         setCurrentStep(2);
     };
 
     const executeTransfer = () => {
-        setConfirmationDetails(null);
         showAlert('Processing transfer...', 'info');
-        setTimeout(() => {
-            showSuccessModal();
-        }, 2000);
+
+        if (confirmationDetails?.type === 'paynix') {
+            const payload = {
+                accountno: confirmationDetails.recipient,
+                amount: confirmationDetails.amount,
+                ref: generateRef(),
+                desc: confirmationDetails.description || null
+            };
+
+            axiosInstance
+                .post('/transfer/paynix', payload)
+                .then((response) => {
+                    const res = response.data;
+                    if (res.code === 200) {
+                        showSuccessModal();
+                    } else {
+                        showAlert('Transfer failed: ' + res.message, 'error');
+                    }
+                })
+                .catch((error) => {
+                    const errRes = error.response?.data || {};
+                    const message = errRes.message || 'Something went wrong. Please try again.';
+                    showAlert(message, 'error');
+                })
+                .finally(() => {
+                    setConfirmationDetails(null);
+                });
+        } else {
+            // Handle external transfer (mock for now as not specified)
+            setTimeout(() => {
+                showSuccessModal();
+            }, 2000);
+        }
     };
 
     const showSuccessModal = () => {
@@ -176,10 +110,6 @@ const Transfer = () => {
         if (currentStep > 1) {
             setCurrentStep(1);
             setSelectedTransferType('');
-            setSelectedBank('');
-            setPaynixAmount('');
-            setExternalAmount('');
-            setExternalName('');
         } else {
             showAlert('Going back to dashboard...', 'info');
         }
@@ -198,6 +128,10 @@ const Transfer = () => {
         showAlert('Navigating to transactions...', 'info');
     };
 
+    const handleProceed = (details) => {
+        setConfirmationDetails(details);
+        setCurrentStep(3);
+    };
 
     return (
         <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
@@ -288,207 +222,12 @@ const Transfer = () => {
 
                     {/* Transfer Form */}
                     <div id="transfer-form" className={`${selectedTransferType ? '' : 'hidden'}`}>
-                        {/* Paynix Transfer Form */}
-                        <div id="paynix-form" className={`${selectedTransferType === 'paynix' ? '' : 'hidden'}`}>
-                            <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-                                <h3 className="text-xl font-bold text-gray-900 mb-6">Transfer to Paynix Account</h3>
-                                <div className="mb-6">
-                                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Recent Contacts</h4>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        {[
-                                            { name: 'Jane Smith', account: '2345678901', color: 'pink', initials: 'JS' },
-                                            { name: 'Mike Johnson', account: '3456789012', color: 'blue', initials: 'MJ' }
-                                        ].map((contact) => (
-                                            <div
-                                                key={contact.account}
-                                                className="recent-contact flex items-center space-x-3 p-3 border border-gray-200 rounded-xl"
-                                                onClick={() => selectContact(contact.name, contact.account)}
-                                            >
-                                                <div className={`w-10 h-10 bg-${contact.color}-100 rounded-full flex items-center justify-center`}>
-                                                    <span className={`text-${contact.color}-600 font-semibold text-sm`}>{contact.initials}</span>
-                                                </div>
-                                                <div className="flex-1">
-                                                    <p className="font-semibold text-gray-900 text-sm">{contact.name}</p>
-                                                    <p className="text-gray-600 text-xs">{contact.account}</p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Account Number / Phone</label>
-                                        <input
-                                            type="text"
-                                            id="paynix-recipient"
-                                            className="form-input w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none"
-                                            placeholder="Enter account number or phone"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Amount (₦)</label>
-                                        <input
-                                            type="number"
-                                            id="paynix-amount"
-                                            className="form-input w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none"
-                                            placeholder="0.00"
-                                            onChange={handlePaynixAmountChange}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="mt-6">
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Description (Optional)</label>
-                                    <textarea
-                                        id="paynix-description"
-                                        className="form-input w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none h-24 resize-none"
-                                        placeholder="What's this transfer for?"
-                                    ></textarea>
-                                </div>
-                                <div className="mt-6 p-4 bg-gray-50 rounded-xl">
-                                    <div className="flex justify-between text-sm mb-2">
-                                        <span className="text-gray-600">Transfer Amount:</span>
-                                        <span className="font-semibold" id="paynix-transfer-amount">
-                                            ₦{(paynixAmount || 0).toLocaleString('en-NG', { minimumFractionDigits: 2 })}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between text-sm mb-2">
-                                        <span className="text-gray-600">Transfer Fee:</span>
-                                        <span className="font-semibold text-green-600">Free</span>
-                                    </div>
-                                    <div className="border-t border-gray-200 mt-2 pt-2 flex justify-between">
-                                        <span className="font-semibold text-gray-900">Total:</span>
-                                        <span className="font-bold text-[#1A2B4D]" id="paynix-total">
-                                            ₦{(paynixAmount || 0).toLocaleString('en-NG', { minimumFractionDigits: 2 })}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="mt-8 flex space-x-4">
-                                    <button
-                                        onClick={goBack}
-                                        className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={proceedPaynixTransfer}
-                                        className="flex-1 gradient-primary text-white px-6 py-3 rounded-xl font-semibold hover:opacity-90 transition-opacity"
-                                    >
-                                        Continue
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* External Bank Transfer Form */}
-                        <div id="external-form" className={`${selectedTransferType === 'external' ? '' : 'hidden'}`}>
-                            <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-                                <h3 className="text-xl font-bold text-gray-900 mb-6">Transfer to External Bank</h3>
-                                <div className="mb-6">
-                                    <label className="block text-sm font-semibold text-gray-700 mb-3">Select Bank</label>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                        {[
-                                            { name: 'GTBank', code: 'gtb', color: 'orange', initials: 'GTB' },
-                                            { name: 'Access Bank', code: 'access', color: 'green', initials: 'ACC' },
-                                            { name: 'First Bank', code: 'firstbank', color: 'blue', initials: 'FBN' },
-                                            { name: 'Zenith Bank', code: 'zenith', color: 'red', initials: 'ZEN' },
-                                            { name: 'UBA', code: 'uba', color: 'purple', initials: 'UBA' },
-                                            { name: 'Others', code: 'others', color: 'gray', icon: <MoreHorizontal className="w-4 h-4 text-gray-600" /> }
-                                        ].map((bank) => (
-                                            <div
-                                                key={bank.code}
-                                                className={`bank-option border border-gray-200 rounded-xl p-3 flex items-center space-x-3 ${selectedBank === bank.code ? 'selected' : ''}`}
-                                                onClick={() => selectBank(bank.name, bank.code)}
-                                            >
-                                                <div className={`w-8 h-8 bg-${bank.color}-100 rounded-full flex items-center justify-center`}>
-                                                    {bank.initials ? (
-                                                        <span className={`text-${bank.color}-600 font-bold text-xs`}>{bank.initials}</span>
-                                                    ) : (
-                                                        bank.icon
-                                                    )}
-                                                </div>
-                                                <span className="text-sm font-medium">{bank.name}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Account Number</label>
-                                        <input
-                                            type="text"
-                                            id="external-account"
-                                            className="form-input w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none"
-                                            placeholder="0123456789"
-                                            value={externalAccount}
-                                            onChange={(e) => setExternalAccount(e.target.value)}
-                                            onBlur={handleExternalAccountBlur}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Amount (₦)</label>
-                                        <input
-                                            type="number"
-                                            id="external-amount"
-                                            className="form-input w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none"
-                                            placeholder="0.00"
-                                            onChange={handleExternalAmountChange}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="mt-6">
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Account Name</label>
-                                    <input
-                                        type="text"
-                                        id="external-name"
-                                        className="form-input w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none bg-gray-50"
-                                        placeholder="Account name will appear here"
-                                        value={externalName}
-                                        readOnly
-                                    />
-                                </div>
-                                <div className="mt-6">
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Narration</label>
-                                    <input
-                                        type="text"
-                                        id="external-narration"
-                                        className="form-input w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none"
-                                        placeholder="Purpose of transfer"
-                                    />
-                                </div>
-                                <div className="mt-6 p-4 bg-gray-50 rounded-xl">
-                                    <div className="flex justify-between text-sm mb-2">
-                                        <span className="text-gray-600">Transfer Amount:</span>
-                                        <span className="font-semibold" id="external-transfer-amount">
-                                            ₦{(externalAmount || 0).toLocaleString('en-NG', { minimumFractionDigits: 2 })}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between text-sm mb-2">
-                                        <span className="text-gray-600">Transfer Fee:</span>
-                                        <span className="font-semibold text-orange-600">₦25.00</span>
-                                    </div>
-                                    <div className="border-t border-gray-200 mt-2 pt-2 flex justify-between">
-                                        <span className="font-semibold text-gray-900">Total:</span>
-                                        <span className="font-bold text-[#1A2B4D]" id="external-total">
-                                            ₦{(externalAmount + 25 || 25).toLocaleString('en-NG', { minimumFractionDigits: 2 })}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="mt-8 flex space-x-4">
-                                    <button
-                                        onClick={goBack}
-                                        className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={proceedExternalTransfer}
-                                        className="flex-1 gradient-primary text-white px-6 py-3 rounded-xl font-semibold hover:opacity-90 transition-opacity"
-                                    >
-                                        Continue
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        {selectedTransferType === 'paynix' && (
+                            <PaynixTransferForm onProceed={handleProceed} onCancel={goBack} />
+                        )}
+                        {selectedTransferType === 'external' && (
+                            <ExternalTransferForm onProceed={handleProceed} onCancel={goBack} />
+                        )}
                     </div>
 
                     {/* Confirmation Modal */}
@@ -509,8 +248,12 @@ const Transfer = () => {
                                             <span className="font-semibold">{confirmationDetails.recipient}</span>
                                         </div>
                                         <div className="flex justify-between mb-2">
+                                            <span className="text-gray-600">Name:</span>
+                                            <span className="font-semibold">{confirmationDetails.accountName}</span>
+                                        </div>
+                                        <div className="flex justify-between mb-2">
                                             <span className="text-gray-600">Amount:</span>
-                                            <span className="font-semibold">₦{confirmationDetails.amount.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</span>
+                                            <span className="font-semibold">{formatMoney(confirmationDetails.amount || 0)}</span>
                                         </div>
                                         <div className="flex justify-between mb-2">
                                             <span className="text-gray-600">Fee:</span>
@@ -525,7 +268,7 @@ const Transfer = () => {
                                         <div className="border-t border-gray-200 mt-2 pt-2 flex justify-between">
                                             <span className="font-bold text-gray-900">Total:</span>
                                             <span className="font-bold text-[#1A2B4D]">
-                                                ₦{confirmationDetails.amount.toLocaleString('en-NG', { minimumFractionDigits: 2 })}
+                                                {formatMoney(confirmationDetails.amount || 0)}
                                             </span>
                                         </div>
                                     </div>
@@ -545,11 +288,11 @@ const Transfer = () => {
                                         </div>
                                         <div className="flex justify-between mb-2">
                                             <span className="text-gray-600">Amount:</span>
-                                            <span className="font-semibold">₦{confirmationDetails?.amount.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</span>
+                                            <span className="font-semibold">{formatMoney(confirmationDetails?.amount || 0)}</span>
                                         </div>
                                         <div className="flex justify-between mb-2">
                                             <span className="text-gray-600">Fee:</span>
-                                            <span className="font-semibold text-orange-600">₦{confirmationDetails?.fee.toFixed(2)}</span>
+                                            <span className="font-semibold text-orange-600">{formatMoney(confirmationDetails?.fee || 0)}</span>
                                         </div>
                                         {confirmationDetails?.narration && (
                                             <div className="flex justify-between mb-2">
@@ -560,7 +303,7 @@ const Transfer = () => {
                                         <div className="border-t border-gray-200 mt-2 pt-2 flex justify-between">
                                             <span className="font-bold text-gray-900">Total:</span>
                                             <span className="font-bold text-[#1A2B4D]">
-                                                ₦{(confirmationDetails?.amount + confirmationDetails?.fee).toLocaleString('en-NG', { minimumFractionDigits: 2 })}
+                                                {formatMoney((confirmationDetails?.amount + confirmationDetails?.fee) || 0)}
                                             </span>
                                         </div>
                                     </div>
@@ -621,8 +364,6 @@ const Transfer = () => {
                     </div>
                 </main>
             </div>
-
-
         </div>
     );
 };

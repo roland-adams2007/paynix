@@ -9,6 +9,7 @@ import axiosInstance from '../api/axiosInstance';
 import { useAlert } from '../context/AlertContext';
 import { useAuth } from '../context/UseAuth';
 import formatMoney from '../utils/formatMoney';
+import { useGlobal } from '../context/UseGlobal';
 
 
 const Dashboard = () => {
@@ -16,10 +17,10 @@ const Dashboard = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [showBalance, setShowBalance] = useState(true);
     const [greeting, setGreeting] = useState('Good morning');
-    const [bankDetails, setBankDetails] = useState([]);
-    const [isBankFetching, setIsBankFetching] = useState(true);
-    const fetchRef = useRef(false);
     const { user } = useAuth();
+    const { isBankFetching, bankDetails } = useGlobal();
+
+
 
 
     const toggleSidebar = () => {
@@ -33,31 +34,6 @@ const Dashboard = () => {
     const toggleBalance = () => {
         setShowBalance(!showBalance);
     };
-
-
-
-    useEffect(() => {
-        if (fetchRef.current == true) return;
-        fetchRef.current = true;
-
-        setIsBankFetching(true);
-        axiosInstance.post("/account/me", { type: "me" })
-            .then(response => {
-                const res = response.data;
-                setBankDetails(res.data);
-            })
-            .catch((error) => {
-                const errRes = error.response?.data || {};
-                let message =
-                    errRes.message || "Something went wrong. Please try again.";
-                showAlert(message, "error");
-            })
-            .finally(() => {
-                setIsBankFetching(false);
-            });
-
-    }, [])
-
 
 
 

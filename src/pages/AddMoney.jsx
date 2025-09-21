@@ -30,6 +30,8 @@ import { useAuth } from '../context/UseAuth';
 import formatMoney from '../utils/formatMoney';
 import axiosInstance from '../api/axiosInstance';
 import generateRef from '../utils/generateRef';
+import formatDate from '../utils/formatDate';
+
 
 // Debounce utility to delay API calls
 const debounce = (func, delay) => {
@@ -58,13 +60,21 @@ const AddMoney = () => {
     const [isPaymentDetailsFetched, setIsPaymentDetailsFetched] = useState(false);
     const hasFetchedMethods = useRef(false);
     const inputRef = useRef(null);
-    const amountSectionRef = useRef(null); // Reference to the amount section
+    const amountSectionRef = useRef(null);
+    const [recentTransactions, setRecentTransactions] = useState([]);
+    const [isTransLoading, setIsTransLoading] = useState(false);
 
-    // Fetch payment methods on component mount (only once)
     useEffect(() => {
         if (hasFetchedMethods.current) return;
         hasFetchedMethods.current = true;
+        getPaymentMethod();
+        getRecentTransaction();
 
+
+
+    }, []);
+
+    function getPaymentMethod() {
         setIsLoading(true);
         axiosInstance
             .post('/getpaymentmethod', { type: 'get' })
@@ -83,7 +93,32 @@ const AddMoney = () => {
             .finally(() => {
                 setIsLoading(false);
             });
-    }, [showAlert]);
+
+    }
+
+    function getRecentTransaction() {
+        setIsTransLoading(true);
+        axiosInstance.post("/add-money/transactions", { type: "get" })
+            .then(response => {
+                const res = response.data;
+                const { code, message, data } = res;
+
+                if (code == 200) {
+                    setRecentTransactions(data);
+                } else {
+                    showAlert(message || 'Failed to fetch transactions');
+
+                }
+            })
+            .catch(error => {
+                const errRes = error.response?.data || {};
+                const message = errRes.message || 'Something went wrong. Please try again.';
+                showAlert(message, 'error');
+            })
+            .finally(() => {
+                setIsTransLoading(false);
+            });
+    }
 
     // Debounced function to fetch payment details
     const fetchPaymentDetails = useRef(
@@ -182,7 +217,7 @@ const AddMoney = () => {
     const processAddMoney = (amount, methodType) => {
         setShowModal('processing');
         const transactionRef = generateRef();
-        axiosInstance.post('/create-transaction', {
+        axiosInstance.post('/add-money/create-transaction', {
             amount: parseFloat(amount),
             methodType,
             transactionRef,
@@ -193,6 +228,28 @@ const AddMoney = () => {
                     setShowModal(null);
                     return;
                 }
+
+
+                axiosInstance.post("/add-money/update-transaction", {
+                    ref: pendingResponse.data.data.ref
+                })
+                    .then(updateResponse => {
+                        if (updateResponse.data.code == 200) {
+                            setShowModal('success');
+                            getRecentTransaction();
+                            showAlert(updateResponse.data.message || 'Payment Successful', 'success');
+                        } else {
+                            showAlert('Payment Failed', 'error');
+                            setShowModal(null);
+                        }
+                    })
+                    .catch(error => {
+                        const errRes = error.response?.data || {};
+                        const message = errRes.message || 'Something went wrong. Please try again.';
+                        showAlert(message, 'error');
+                        setShowModal(null);
+                    })
+
             })
             .catch(error => {
                 const errRes = error.response?.data || {};
@@ -230,6 +287,14 @@ const AddMoney = () => {
             amountSectionRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     };
+
+    const methodIcons2 = {
+        bank_transfer: { icon: Plus, bg: "bg-green-50", border: "border-green-100", color: "text-green-600" },
+        debit_card: { icon: CreditCard, bg: "bg-blue-50", border: "border-blue-100", color: "text-blue-600" },
+        ussd: { icon: Smartphone, bg: "bg-yellow-50", border: "border-yellow-100", color: "text-yellow-600" },
+    };
+
+
 
     return (
         <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
@@ -335,7 +400,7 @@ const AddMoney = () => {
                                 <button
                                     onClick={handleAddMoney}
                                     disabled={!isPaymentDetailsFetched}
-                                    className={`w-full gradient-primary text-white py-4 px-6 rounded-xl font-semibold text-lg transition-opacity flex items-center justify-center space-x-2 ${!isPaymentDetailsFetched ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'
+                                    className={`w-full gradient-primary cursor-pointer text-white py-4 px-6 rounded-xl font-semibold text-lg transition-opacity flex items-center justify-center space-x-2 ${!isPaymentDetailsFetched ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'
                                         }`}
                                 >
                                     <span>Add Money Now</span>
@@ -379,24 +444,40 @@ const AddMoney = () => {
                             <div className="bg-white rounded-2xl shadow-sm p-6 animate-slide-up">
                                 <h3 className="text-lg font-bold text-gray-900 mb-4">Recent Add Money</h3>
                                 <div className="space-y-4">
-                                    {[
-                                        { icon: Plus, bg: 'bg-green-50', border: 'border-green-100', color: 'text-green-600', method: 'Bank Transfer', date: 'Jan 30, 10:23 AM', amount: '+₦50,000' },
-                                        { icon: CreditCard, bg: 'bg-blue-50', border: 'border-blue-100', color: 'text-blue-600', method: 'Debit Card', date: 'Jan 28, 02:45 PM', amount: '+₦25,000' },
-                                        { icon: Smartphone, bg: 'bg-yellow-50', border: 'border-yellow-100', color: 'text-yellow-600', method: 'USSD', date: 'Jan 25, 09:15 AM', amount: '+₦15,000' },
-                                    ].map((transaction, index) => (
-                                        <div key={index} className={`flex items-center justify-between p-3 ${transaction.bg} rounded-xl ${transaction.border}`}>
-                                            <div className="flex items-center space-x-3">
-                                                <div className={`w-8 h-8 ${transaction.bg} rounded-lg flex items-center justify-center`}>
-                                                    <transaction.icon className={`w-4 h-4 ${transaction.color}`} />
-                                                </div>
-                                                <div>
-                                                    <p className="font-semibold text-gray-900 text-sm">{transaction.method}</p>
-                                                    <p className="text-xs text-gray-600">{transaction.date}</p>
-                                                </div>
-                                            </div>
-                                            <span className={`text-sm font-bold ${transaction.color}`}>{transaction.amount}</span>
+                                    {isTransLoading ? (
+                                        <div className="flex justify-center items-center">
+                                            <div className="w-12 h-12 border-4 border-[#20C997] border-t-transparent rounded-full animate-spin" />
                                         </div>
-                                    ))}
+                                    ) : (
+                                        recentTransactions.map((transaction, index) => {
+                                            const { icon: Icon, bg, border, color } =
+                                                methodIcons2[transaction.payment_method] || methodIcons2.bank_transfer;
+
+                                            return (
+                                                <div
+                                                    key={index}
+                                                    className={`flex items-center justify-between p-3 ${bg} rounded-xl ${border}`}
+                                                >
+                                                    <div className="flex items-center space-x-3">
+                                                        <div className={`w-8 h-8 ${bg} rounded-lg flex items-center justify-center`}>
+                                                            <Icon className={`w-4 h-4 ${color}`} />
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-semibold text-gray-900 text-sm">
+                                                                {transaction.payment_method.replace("_", " ")}
+                                                            </p>
+                                                            <p className="text-xs text-gray-600">
+                                                                {formatDate(transaction.created_at)}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <span className={`text-sm font-bold ${color}`}>
+                                                        +{formatMoney(transaction.amount)}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })
+                                    )}
                                 </div>
                                 <a href="#" className="block text-center mt-4 text-[#20C997] text-sm font-medium hover:text-opacity-80 transition-colors">
                                     View All Transactions
