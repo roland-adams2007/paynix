@@ -1,3 +1,4 @@
+// Transfer.jsx
 import React, { useState } from 'react';
 import {
     LayoutDashboard,
@@ -36,13 +37,19 @@ import { useAlert } from '../context/AlertContext';
 import formatMoney from '../utils/formatMoney';
 import axiosInstance from '../api/axiosInstance';
 import generateRef from '../utils/generateRef';
+import PinModal from '../components/PinModal';
+import { useGlobal } from '../context/UseGlobal';
+
 
 const Transfer = () => {
     const { showAlert } = useAlert();
+    const { fetchBankDetails } = useGlobal();
     const [selectedTransferType, setSelectedTransferType] = useState('');
     const [currentStep, setCurrentStep] = useState(1);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [confirmationDetails, setConfirmationDetails] = useState(null);
+    const [showPinModal, setShowPinModal] = useState(false);
+    const [pendingTransfer, setPendingTransfer] = useState(null);
 
     const toggleSidebar = () => {
         setIsSidebarOpen(!isSidebarOpen);
@@ -64,37 +71,45 @@ const Transfer = () => {
         setCurrentStep(2);
     };
 
-    const executeTransfer = () => {
-        showAlert('Processing transfer...', 'info');
+    const handlePinConfirm = async (pin) => {
+        if (!pendingTransfer) return false;
 
-        if (confirmationDetails?.type === 'paynix') {
+        try {
             const payload = {
-                accountno: confirmationDetails.recipient,
-                amount: confirmationDetails.amount,
+                accountno: pendingTransfer.recipient,
+                amount: pendingTransfer.amount,
                 ref: generateRef(),
-                desc: confirmationDetails.description || null
+                desc: pendingTransfer.description || null,
+                pin: pin
             };
 
-            axiosInstance
-                .post('/transfer/paynix', payload)
-                .then((response) => {
-                    const res = response.data;
-                    if (res.code === 200) {
-                        showSuccessModal();
-                    } else {
-                        showAlert('Transfer failed: ' + res.message, 'error');
-                    }
-                })
-                .catch((error) => {
-                    const errRes = error.response?.data || {};
-                    const message = errRes.message || 'Something went wrong. Please try again.';
-                    showAlert(message, 'error');
-                })
-                .finally(() => {
-                    setConfirmationDetails(null);
-                });
+            const response = await axiosInstance.post('/transfer/paynix', payload);
+            const res = response.data;
+            if (res.code === 200) {
+                fetchBankDetails();
+                showSuccessModal();
+                setPendingTransfer(null);
+                setShowPinModal(false);
+                return true;
+            } else {
+                showAlert('Transfer failed: ' + res.message, 'error');
+                return false;
+            }
+        } catch (error) {
+            const errRes = error.response?.data || {};
+            const message = errRes.message || 'Something went wrong. Please try again.';
+            showAlert(message, 'error');
+            return false;
+        }
+    };
+
+    const executeTransfer = () => {
+        setConfirmationDetails(null);
+        if (confirmationDetails?.type === 'paynix') {
+            setPendingTransfer(confirmationDetails);
+            setShowPinModal(true);
         } else {
-            // Handle external transfer (mock for now as not specified)
+
             setTimeout(() => {
                 showSuccessModal();
             }, 2000);
@@ -362,6 +377,20 @@ const Transfer = () => {
                             </button>
                         </div>
                     </div>
+
+                    {/* Pin Modal */}
+                    {showPinModal && (
+                        <PinModal
+                            onConfirm={handlePinConfirm}
+                            onCancel={() => {
+                                setShowPinModal(false);
+                                setPendingTransfer(null);
+                                setCurrentStep(2);
+                            }}
+                            amount={pendingTransfer?.amount || 0}
+                            recipientName={pendingTransfer?.accountName || ''}
+                        />
+                    )}
                 </main>
             </div>
         </div>

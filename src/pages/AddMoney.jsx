@@ -31,6 +31,8 @@ import formatMoney from '../utils/formatMoney';
 import axiosInstance from '../api/axiosInstance';
 import generateRef from '../utils/generateRef';
 import formatDate from '../utils/formatDate';
+import { useGlobal } from '../context/UseGlobal';
+
 
 
 // Debounce utility to delay API calls
@@ -44,6 +46,7 @@ const debounce = (func, delay) => {
 
 const AddMoney = () => {
     const { showAlert } = useAlert();
+    const { fetchBankDetails } = useGlobal();
     const [selectedMethod, setSelectedMethod] = useState('bank_transfer');
     const [amount, setAmount] = useState('');
     const [selectedAmount, setSelectedAmount] = useState(null);
@@ -237,6 +240,7 @@ const AddMoney = () => {
                         if (updateResponse.data.code == 200) {
                             setShowModal('success');
                             getRecentTransaction();
+                            fetchBankDetails();
                             showAlert(updateResponse.data.message || 'Payment Successful', 'success');
                         } else {
                             showAlert('Payment Failed', 'error');

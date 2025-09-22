@@ -106,7 +106,7 @@ const Onboarding = () => {
         axiosInstance.post('/auth/onboarding', { bvn, nin, token })
             .then(response => {
                 const res = response.data;
-                const { user: userData, tokenData } = res.data;
+                const { userData, tokenData } = res.data;
 
                 const expiresAt = tokenData?.expires_at;
                 let secondsLeft = 86400;
